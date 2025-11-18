@@ -62,15 +62,15 @@
                     <h3 class="text-xl font-bold text-green-600" id="statActive">-</h3>
                 </div>
                 <div class="rounded-lg border border-border bg-background p-4">
-                    <p class="text-sm font-medium text-muted-foreground mb-2">总图片数</p>
+                    <p class="text-sm font-medium text-muted-foreground mb-2">今日图片/总图片</p>
                     <h3 class="text-xl font-bold text-blue-600" id="statImages">-</h3>
                 </div>
                 <div class="rounded-lg border border-border bg-background p-4">
-                    <p class="text-sm font-medium text-muted-foreground mb-2">总视频数</p>
+                    <p class="text-sm font-medium text-muted-foreground mb-2">今日视频/总视频</p>
                     <h3 class="text-xl font-bold text-purple-600" id="statVideos">-</h3>
                 </div>
                 <div class="rounded-lg border border-border bg-background p-4">
-                    <p class="text-sm font-medium text-muted-foreground mb-2">错误次数</p>
+                    <p class="text-sm font-medium text-muted-foreground mb-2">今日错误/总错误</p>
                     <h3 class="text-xl font-bold text-destructive" id="statErrors">-</h3>
                 </div>
             </div>
@@ -229,7 +229,7 @@
                                 <p class="text-xs text-muted-foreground mt-1">文件缓存超时时间，范围：60-86400 秒（1分钟-24小时）</p>
                             </div>
                             <div>
-                                <label class="text-sm font-medium mb-2 block">缓存文件访问域名（请使用当前服务的地址）</label>
+                                <label class="text-sm font-medium mb-2 block">缓存文件访问域名</label>
                                 <input id="cfgCacheBaseUrl" type="text" class="flex h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="https://yourdomain.com">
                                 <p class="text-xs text-muted-foreground mt-1">留空则使用服务器地址，例如：https://yourdomain.com</p>
                             </div>
@@ -271,7 +271,7 @@
                                 <input type="checkbox" id="cfgWatermarkFreeEnabled" class="h-4 w-4 rounded border-input" onchange="toggleWatermarkFreeOptions()">
                                 <span class="text-sm font-medium">开启无水印模式</span>
                             </label>
-                            <p class="text-xs text-muted-foreground mt-2">开启后生成的视频将会被发布到sora平台并且提取返回无水印的视频，在缓存到本地后会自动删除发布的视频(需要开启缓存功能)</p>
+                            <p class="text-xs text-muted-foreground mt-2">开启后生成的视频将会被发布到sora平台并且提取返回无水印的视频，在缓存到本地后会自动删除发布的视频</p>
                         </div>
 
                         <!-- 解析方式选择 -->
@@ -561,7 +561,7 @@
         const $=(id)=>document.getElementById(id),
         checkAuth=()=>{const t=localStorage.getItem('adminToken');return t||(location.href='/login',null),t},
         apiRequest=async(url,opts={})=>{const t=checkAuth();if(!t)return null;const r=await fetch(url,{...opts,headers:{...opts.headers,Authorization:`Bearer ${t}`,'Content-Type':'application/json'}});return r.status===401?(localStorage.removeItem('adminToken'),location.href='/login',null):r},
-        loadStats=async()=>{try{const r=await apiRequest('/api/stats');if(!r)return;const d=await r.json();$('statTotal').textContent=d.total_tokens||0;$('statActive').textContent=d.active_tokens||0;$('statImages').textContent=d.total_images||0;$('statVideos').textContent=d.total_videos||0;$('statErrors').textContent=d.total_errors||0}catch(e){console.error('加载统计失败:',e)}},
+        loadStats=async()=>{try{const r=await apiRequest('/api/stats');if(!r)return;const d=await r.json();$('statTotal').textContent=d.total_tokens||0;$('statActive').textContent=d.active_tokens||0;$('statImages').textContent=(d.today_images||0)+'/'+(d.total_images||0);$('statVideos').textContent=(d.today_videos||0)+'/'+(d.total_videos||0);$('statErrors').textContent=(d.today_errors||0)+'/'+(d.total_errors||0)}catch(e){console.error('加载统计失败:',e)}},
         loadTokens=async()=>{try{const r=await apiRequest('/api/tokens');if(!r)return;allTokens=await r.json();renderTokens()}catch(e){console.error('加载Token失败:',e)}},
         formatExpiry=exp=>{if(!exp)return'-';const d=new Date(exp),now=new Date(),diff=d-now;const dateStr=d.toLocaleDateString('zh-CN',{year:'numeric',month:'2-digit',day:'2-digit'}).replace(/\//g,'-');const timeStr=d.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',hour12:false});if(diff<0)return`<span class="text-red-600">${dateStr} ${timeStr}</span>`;const days=Math.floor(diff/864e5);if(days<7)return`<span class="text-orange-600">${dateStr} ${timeStr}</span>`;return`${dateStr} ${timeStr}`},
         formatPlanType=type=>{if(!type)return'-';const typeMap={'chatgpt_team':'Team','chatgpt_plus':'Plus','chatgpt_pro':'Pro','chatgpt_free':'Free'};return typeMap[type]||type},

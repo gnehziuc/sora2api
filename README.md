@@ -126,8 +126,8 @@ python main.py
 | 图生图 | `sora-image*` | 使用 `content` 数组 + `image_url` |
 | 文生视频 | `sora-video*` | 使用 `content` 为字符串 |
 | 图生视频 | `sora-video*` | 使用 `content` 数组 + `image_url` |
-| 创建角色 | `sora-video*` | 使用 `content` 数组 + `input_video` |
-| 角色生成视频 | `sora-video*` | 使用 `content` 数组 + `input_video` + 文本 |
+| 创建角色 | `sora-video*` | 使用 `content` 数组 + `video_url` |
+| 角色生成视频 | `sora-video*` | 使用 `content` 数组 + `video_url` + 文本 |
 | Remix | `sora-video*` | 在 `content` 中包含 Remix ID |
 
 ---
@@ -299,8 +299,8 @@ curl -X POST "http://localhost:8000/v1/chat/completions" \
         "role": "user",
         "content": [
           {
-            "type": "input_video",
-            "videoUrl": {
+            "type": "video_url",
+            "video_url": {
               "url": "data:video/mp4;base64,<base64_encoded_video_data>"
             }
           }
@@ -326,8 +326,8 @@ curl -X POST "http://localhost:8000/v1/chat/completions" \
         "role": "user",
         "content": [
           {
-            "type": "input_video",
-            "videoUrl": {
+            "type": "video_url",
+            "video_url": {
               "url": "data:video/mp4;base64,<base64_encoded_video_data>"
             }
           },
@@ -366,8 +366,8 @@ response = requests.post(
                 "role": "user",
                 "content": [
                     {
-                        "type": "input_video",
-                        "videoUrl": {
+                        "type": "video_url",
+                        "video_url": {
                             "url": f"data:video/mp4;base64,{video_data}"
                         }
                     }

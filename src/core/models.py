@@ -42,6 +42,10 @@ class TokenStats(BaseModel):
     video_count: int = 0
     error_count: int = 0
     last_error_at: Optional[datetime] = None
+    today_image_count: int = 0
+    today_video_count: int = 0
+    today_error_count: int = 0
+    today_date: Optional[str] = None
 
 class Task(BaseModel):
     """Task model"""

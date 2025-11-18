@@ -111,9 +111,9 @@ async def create_chat_completion(
                                 image_data = url.split("base64,", 1)[1]
                             else:
                                 image_data = url
-                    elif item.get("type") == "input_video":
-                        # Extract video from input_video
-                        video_url = item.get("videoUrl", {})
+                    elif item.get("type") == "video_url":
+                        # Extract video from video_url
+                        video_url = item.get("video_url", {})
                         url = video_url.get("url", "")
                         if url.startswith("data:video") or url.startswith("data:application"):
                             # Extract base64 data from data URI

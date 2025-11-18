@@ -283,6 +283,10 @@ class Database:
                     video_count INTEGER DEFAULT 0,
                     error_count INTEGER DEFAULT 0,
                     last_error_at TIMESTAMP,
+                    today_image_count INTEGER DEFAULT 0,
+                    today_video_count INTEGER DEFAULT 0,
+                    today_error_count INTEGER DEFAULT 0,
+                    today_date DATE,
                     FOREIGN KEY (token_id) REFERENCES tokens(id)
                 )
             """)
@@ -392,6 +396,16 @@ class Database:
             await db.execute("CREATE INDEX IF NOT EXISTS idx_task_id ON tasks(task_id)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_task_status ON tasks(status)")
             await db.execute("CREATE INDEX IF NOT EXISTS idx_token_active ON tokens(is_active)")
+
+            # Migration: Add daily statistics columns if they don't exist
+            if not await self._column_exists(db, "token_stats", "today_image_count"):
+                await db.execute("ALTER TABLE token_stats ADD COLUMN today_image_count INTEGER DEFAULT 0")
+            if not await self._column_exists(db, "token_stats", "today_video_count"):
+                await db.execute("ALTER TABLE token_stats ADD COLUMN today_video_count INTEGER DEFAULT 0")
+            if not await self._column_exists(db, "token_stats", "today_error_count"):
+                await db.execute("ALTER TABLE token_stats ADD COLUMN today_error_count INTEGER DEFAULT 0")
+            if not await self._column_exists(db, "token_stats", "today_date"):
+                await db.execute("ALTER TABLE token_stats ADD COLUMN today_date DATE")
 
             await db.commit()
 
@@ -729,28 +743,91 @@ class Database:
     
     async def increment_image_count(self, token_id: int):
         """Increment image generation count"""
+        from datetime import date
         async with aiosqlite.connect(self.db_path) as db:
-            await db.execute("""
-                UPDATE token_stats SET image_count = image_count + 1 WHERE token_id = ?
-            """, (token_id,))
+            today = str(date.today())
+            # Get current stats
+            cursor = await db.execute("SELECT today_date FROM token_stats WHERE token_id = ?", (token_id,))
+            row = await cursor.fetchone()
+
+            # If date changed, reset today's count
+            if row and row[0] != today:
+                await db.execute("""
+                    UPDATE token_stats
+                    SET image_count = image_count + 1,
+                        today_image_count = 1,
+                        today_date = ?
+                    WHERE token_id = ?
+                """, (today, token_id))
+            else:
+                # Same day, just increment both
+                await db.execute("""
+                    UPDATE token_stats
+                    SET image_count = image_count + 1,
+                        today_image_count = today_image_count + 1,
+                        today_date = ?
+                    WHERE token_id = ?
+                """, (today, token_id))
             await db.commit()
-    
+
     async def increment_video_count(self, token_id: int):
         """Increment video generation count"""
+        from datetime import date
         async with aiosqlite.connect(self.db_path) as db:
-            await db.execute("""
-                UPDATE token_stats SET video_count = video_count + 1 WHERE token_id = ?
-            """, (token_id,))
+            today = str(date.today())
+            # Get current stats
+            cursor = await db.execute("SELECT today_date FROM token_stats WHERE token_id = ?", (token_id,))
+            row = await cursor.fetchone()
+
+            # If date changed, reset today's count
+            if row and row[0] != today:
+                await db.execute("""
+                    UPDATE token_stats
+                    SET video_count = video_count + 1,
+                        today_video_count = 1,
+                        today_date = ?
+                    WHERE token_id = ?
+                """, (today, token_id))
+            else:
+                # Same day, just increment both
+                await db.execute("""
+                    UPDATE token_stats
+                    SET video_count = video_count + 1,
+                        today_video_count = today_video_count + 1,
+                        today_date = ?
+                    WHERE token_id = ?
+                """, (today, token_id))
             await db.commit()
     
     async def increment_error_count(self, token_id: int):
         """Increment error count"""
+        from datetime import date
         async with aiosqlite.connect(self.db_path) as db:
-            await db.execute("""
-                UPDATE token_stats 
-                SET error_count = error_count + 1, last_error_at = CURRENT_TIMESTAMP
-                WHERE token_id = ?
-            """, (token_id,))
+            today = str(date.today())
+            # Get current stats
+            cursor = await db.execute("SELECT today_date FROM token_stats WHERE token_id = ?", (token_id,))
+            row = await cursor.fetchone()
+
+            # If date changed, reset today's error count
+            if row and row[0] != today:
+                await db.execute("""
+                    UPDATE token_stats
+                    SET error_count = error_count + 1,
+                        today_error_count = 1,
+                        today_date = ?,
+                        last_error_at = CURRENT_TIMESTAMP
+                    WHERE token_id = ?
+                """, (today, token_id))
+            else:
+                # Same day, just increment both
+                await db.execute("""
+                    UPDATE token_stats
+                    SET error_count = error_count + 1,
+                        today_error_count = today_error_count + 1,
+                        today_date = ?,
+                        last_error_at = CURRENT_TIMESTAMP
+                    WHERE token_id = ?
+                """, (today, token_id))
             await db.commit()
     
     async def reset_error_count(self, token_id: int):

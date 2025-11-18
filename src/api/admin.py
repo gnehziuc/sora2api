@@ -480,24 +480,33 @@ async def get_stats(token: str = Depends(verify_admin_token)):
     """Get system statistics"""
     tokens = await token_manager.get_all_tokens()
     active_tokens = await token_manager.get_active_tokens()
-    
+
     total_images = 0
     total_videos = 0
     total_errors = 0
-    
+    today_images = 0
+    today_videos = 0
+    today_errors = 0
+
     for token in tokens:
         stats = await db.get_token_stats(token.id)
         if stats:
             total_images += stats.image_count
             total_videos += stats.video_count
             total_errors += stats.error_count
-    
+            today_images += stats.today_image_count
+            today_videos += stats.today_video_count
+            today_errors += stats.today_error_count
+
     return {
         "total_tokens": len(tokens),
         "active_tokens": len(active_tokens),
         "total_images": total_images,
         "total_videos": total_videos,
-        "total_errors": total_errors
+        "today_images": today_images,
+        "today_videos": today_videos,
+        "total_errors": total_errors,
+        "today_errors": today_errors
     }
 
 # Sora2 endpoints
