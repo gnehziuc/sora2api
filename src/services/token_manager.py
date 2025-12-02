@@ -149,10 +149,19 @@ class TokenManager:
                     "subscription_end": ""
                 }
             else:
-                error_msg = f"Failed to get subscription info: {response.status_code}"
-                print(f"❌ {error_msg}")
-                print(f"📄 响应内容: {response.text[:500]}")
-                raise Exception(error_msg)
+                print(f"❌ Failed to get subscription info: {response.status_code}")
+                print(f"📄 响应内容: {response.text}")
+
+                # Check for token_expired error
+                try:
+                    error_data = response.json()
+                    error_info = error_data.get("error", {})
+                    if error_info.get("code") == "token_expired":
+                        raise Exception(f"Token已过期: {error_info.get('message', 'Token expired')}")
+                except ValueError:
+                    pass
+
+                raise Exception(f"Failed to get subscription info: {response.status_code}")
 
     async def get_sora2_invite_code(self, access_token: str) -> dict:
         """Get Sora2 invite code"""
@@ -193,20 +202,29 @@ class TokenManager:
                     "total_count": data.get("total_count", 0)
                 }
             else:
-                # Check if it's 401 unauthorized
+                print(f"❌ 获取Sora2邀请码失败: {response.status_code}")
+                print(f"📄 响应内容: {response.text}")
+
+                # Check for specific errors
                 try:
                     error_data = response.json()
-                    if error_data.get("error", {}).get("message", "").startswith("401"):
+                    error_info = error_data.get("error", {})
+
+                    # Check for unsupported_country_code
+                    if error_info.get("code") == "unsupported_country_code":
+                        country = error_info.get("param", "未知")
+                        raise Exception(f"Sora在您的国家/地区不可用 ({country}): {error_info.get('message', '')}")
+
+                    # Check if it's 401 unauthorized (token doesn't support Sora2)
+                    if error_info.get("message", "").startswith("401"):
                         print(f"⚠️  Token不支持Sora2")
                         return {
                             "supported": False,
                             "invite_code": None
                         }
-                except:
+                except ValueError:
                     pass
 
-                print(f"❌ 获取Sora2邀请码失败: {response.status_code}")
-                print(f"📄 响应内容: {response.text[:500]}")
                 return {
                     "supported": False,
                     "invite_code": None
@@ -649,6 +667,10 @@ class TokenManager:
                 from dateutil import parser
                 subscription_end = parser.parse(sub_info["subscription_end"])
         except Exception as e:
+            error_msg = str(e)
+            # Re-raise if it's a critical error (token expired)
+            if "Token已过期" in error_msg:
+                raise
             # If API call fails, subscription info will be None
             print(f"Failed to get subscription info: {e}")
 
@@ -675,6 +697,10 @@ class TokenManager:
                 except Exception as e:
                     print(f"Failed to get Sora2 remaining count: {e}")
         except Exception as e:
+            error_msg = str(e)
+            # Re-raise if it's a critical error (unsupported country)
+            if "Sora在您的国家/地区不可用" in error_msg:
+                raise
             # If API call fails, Sora2 info will be None
             print(f"Failed to get Sora2 info: {e}")
 
